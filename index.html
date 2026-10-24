@@ -1,0 +1,148 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#103C4A"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SBE Red Light"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Southern Bee Equine – Red Light Session Calculator</title>
+<style>
+:root{--teal:#103C4A;--teal2:#E8F0F1;--gold:#C5A059;--gold2:#FBF5E8;--ink:#14262B}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#FBFAF6}
+header{background:var(--teal);color:#fff;padding:18px 16px;border-bottom:5px solid var(--gold)}header h1{margin:0;font-size:1.25rem}header p{margin:4px 0 0;opacity:.9;font-size:.9rem}
+main{max-width:1100px;margin:auto;padding:14px;display:grid;gap:14px}@media(min-width:900px){main{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}}
+.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px #0002}h2{margin:0 0 10px;color:var(--teal);font-size:1.1rem}
+label{display:block;font-weight:600;margin:12px 0 4px;font-size:.95rem}select,input{width:100%;min-height:46px;font-size:16px;padding:8px 10px;border:1.5px solid #8FA9AE;border-radius:10px;background:#fff}
+input[type=range]{padding:0;border:0;accent-color:var(--teal)}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.flag{background:var(--gold2);border-left:5px solid var(--gold);padding:8px 10px;border-radius:8px;font-size:.88rem;margin-top:8px}
+.big{font-size:2rem;font-weight:800;color:var(--teal)}.res div{margin:6px 0}.warn{background:#fdecea;border-left:5px solid #c0392b;padding:8px 10px;border-radius:8px;margin:6px 0;font-size:.9rem}
+.disc{background:var(--teal2);border:2px solid var(--teal);border-radius:12px;padding:12px;font-weight:600}small,.muted{color:#566;font-size:.85rem}button{min-height:46px;background:var(--gold);color:var(--teal);border:0;border-radius:10px;font-weight:700;padding:0 16px;font-size:16px;margin-top:10px}
+ol{padding-left:20px;font-size:.85rem}
+</style></head><body>
+<header><h1>Southern Bee Equine – Red Light Session Calculator</h1><p>Wellness session-time guide · start low, observe, adjust</p></header>
+<main>
+<div class="disc full">General wellness guide only — not veterinary or medical advice. It does not diagnose, treat or cure any condition. Ask your veterinarian or doctor before use, especially for anything new, unexplained or worsening.</div>
+<section class="card"><h2>1. Who &amp; where</h2>
+<label>Species<select id="species"><option value="horse">Horse</option><option value="dog">Dog</option><option value="cat">Cat</option><option value="human">Human</option></select></label>
+<label>Body area<select id="area"></select></label><small id="depthNote"></small>
+<label>Goal<select id="goal"><option value="relax">Relaxation</option><option value="recovery">Muscle recovery after work</option><option value="comfort">Stiffness / comfort support (sore or tight muscles)</option><option value="circ">Circulation</option><option value="maint">Maintenance</option></select></label>
+<label>Area of concern is…<select id="onset"><option value="recent">Recent (last few days)</option><option value="ongoing">Long-term / ongoing</option><option value="none">No specific concern (routine)</option></select></label>
+<label>Age group<select id="age"><option value="young">Young / still growing</option><option value="adult" selected>Adult</option><option value="senior">Senior</option></select></label>
+<div class="row"><label>Coat / hair<select id="coat"><option value="clipped">Clipped / bare skin</option><option value="short" selected>Short / summer coat</option><option value="thick">Thick / winter coat</option></select></label>
+<label>Coat / skin color<select id="color"><option value="light">Light</option><option value="medium" selected>Medium</option><option value="dark">Dark</option></select></label></div>
+<label id="sizeL">Body size<select id="size"><option value="small">Small (under ~10 kg / 22 lb)</option><option value="medium" selected>Medium</option><option value="large">Large</option></select></label>
+<label>Comfort / discomfort level: <span id="painV">2</span>/10<input type="range" id="pain" min="0" max="10" value="2"></label>
+<label><input type="checkbox" id="flags" style="width:auto;min-height:auto"> Pregnant, on photosensitizing meds/topicals, or a known lump/growth in or near this area</label>
+</section>
+<section class="card"><h2>2. Your device</h2>
+<label>Device type<select id="device"></select></label><div id="devInfo" class="muted"></div>
+<label>Wavelengths (optional, e.g. 660 / 850 nm)<input id="wl" placeholder="e.g. 660 + 850 nm"></label>
+<div id="laserBox"><div class="row"><label>Total optical output (mW)<input type="number" id="laserMw" step="10" placeholder="from manual"></label><label>Spot / aperture area (cm²)<input type="number" id="laserArea" step="0.5" placeholder="e.g. 1–4"></label></div>
+<small>Use <b>optical</b> output (mW of light), not the electrical watts on the plug.</small>
+<label>Laser dosing method<select id="laserMode"><option value="fluence">By dose per area (J/cm²)</option><option value="energy">By total energy per spot (J = W × s)</option></select></label></div>
+<div id="distBox"><label>Distance from body<select id="dist"><option value="0">Contact</option><option value="1">1 inch</option><option value="6" selected>6 inches</option><option value="12">12 inches</option></select></label><small>Intensity falls quickly with distance; closer = shorter time.</small></div>
+<label id="irrL">Irradiance at skin (mW/cm²) — leave blank if unknown<input type="number" id="irr" step="0.1" placeholder="unknown"></label><div id="irrFlag" class="flag"></div>
+<label>Timer presets on your device (optional, minutes)<input id="presets" placeholder="e.g. 5, 10, 15, 20"></label>
+<button id="saveBtn">Save my device settings</button> <button id="resetBtn" style="background:#E8F0F1;border:1.5px solid var(--teal)">Clear</button>
+<details style="margin-top:12px"><summary><b>How do I find my real irradiance?</b></summary><ul class="muted">
+<li>Look for "irradiance" or "power density" in mW/cm² <i>at a stated distance</i> in the manual or a third-party lab report. Ask the seller for one.</li>
+<li>Electrical watts (e.g. "45 W") are power drawn from the wall, <b>not light output</b>, and can't be converted directly.</li>
+<li>For lasers, find the optical output in mW and the spot/aperture size; the calculator divides mW by area.</li>
+<li>Or measure it with a solar power meter like the Tenmars TM-206 and correct the reading below.</li></ul></details>
+<details style="margin-top:12px"><summary><b>Tenmars TM-206 meter converter</b></summary>
+<label>Meter reading (W/m²)<input type="number" id="tm" placeholder="e.g. 1000"></label><div id="tmOut" class="flag">Enter a reading.</div>
+<small>Raw: W/m² ÷ 10 = mW/cm². GembaRed's lab comparison found the TM-206 reads about 2× high on red/NIR LEDs, and fit a non-linear correction for mixed red+NIR. This approximates their curve through their published points (1000 W/m² → 48.8 mW/cm²; meter max ≈ 92 mW/cm²). For exact values, or red-only / NIR-only devices, use GembaRed's own calculators. Measure at your real working distance.</small></details>
+</section>
+<section class="card full res" id="result"></section>
+<section class="card full"><h2>Safety checklist</h2><ul>
+<li>Eye protection for people; never aim at eyes (human or animal). Cover/shield animal eyes when working near the head.</li>
+<li>Check skin and coat for heat every 2–3 minutes; extra caution on dark coats/skin. Stop if warm to the touch or the animal/person is uneasy.</li>
+<li>Avoid: laser over open growth plates in young animals; over known tumors/cancer; pregnant abdomen; thyroid area; active bleeding; after photosensitizing meds or topicals.</li>
+<li>Vet/doctor approval first for unknown lumps, fever, infection, or anything unexplained.</li>
+<li>Stop if discomfort increases. More light is not better — too much can reduce the effect (biphasic dose response).</li></ul></section>
+<section class="card full"><h2>How it works &amp; sources</h2><p class="muted">Time (s) = target dose (J/cm²) ÷ (irradiance mW/cm² ÷ 1000). Target dose starts from a conservative range by tissue depth (superficial ~4, moderate ~6, deep ~8 J/cm²), then is lowered for higher discomfort, recent concerns, young/senior, small size and dark coats, and modestly raised only for thick coats (light loss). Hard caps: 10 J/cm² superficial/moderate, 12 deep; 20 min per area. If you don't enter your device's irradiance, a conservative generic estimate is used — find or measure your real value. Electrical watts are not light output. Cross-check: WALT's 780–860 nm laser table uses about 4–16 J per site (minimum ~4 J per point), with a ±50% therapeutic window, and advises reducing ~30% once things settle; the laser energy-per-spot output here falls in that range.</p>
+<ol>
+<li>WALT (World Association for Photobiomodulation Therapy). Recommended treatment doses for Low Level Laser Therapy, 780–860 nm (rev. April 2010) and 904 nm (rev. October 2022). waltpbm.org/documentation-links/recommendations/dosage-recommendations/</li>
+<li>Huang YY, Chen AC, Carroll JD, Hamblin MR. Biphasic dose response in low level light therapy. Dose-Response. 2009;7(4):358–383. PMC2790317.</li>
+<li>Huang YY, Sharma SK, Carroll J, Hamblin MR. Biphasic dose response in low level light therapy – an update. Dose-Response. 2011;9(4):602–618. PMC3315174.</li>
+<li>Chung H, Dai T, Sharma SK, Huang YY, Carroll JD, Hamblin MR. The nuts and bolts of low-level laser (light) therapy. Ann Biomed Eng. 2012;40(2):516–533. PMC3288797.</li>
+<li>Pryor B, Millis DL. Therapeutic laser in veterinary medicine. Vet Clin North Am Small Anim Pract. 2015;45(1):45–56. doi:10.1016/j.cvsm.2014.09.003.</li>
+<li>Riegel RJ, Godbold JC Jr (eds). Laser Therapy in Veterinary Medicine: Photobiomodulation. Wiley-Blackwell; 2017. ISBN 978-1-119-22019-0.</li>
+<li>GembaRed. Budget Intensity Measurements for Red Light Therapy Part 1 of 3: Tenmars TM-206 (June 25, 2022). gembared.com/blogs/musings/budget-intensity-measurements-for-red-light-therapy-part-1-of-3-tenmars-tm-206</li>
+</ol></section>
+</main><footer style="text-align:center;padding:18px;color:#556;font-size:.85rem">Created by Jessica Hart, Southern Bee Equine · <a href="mailto:southernbeeequine@gmail.com" style="color:var(--teal)">southernbeeequine@gmail.com</a><br><a href="https://holistipro.com/sites/southernbeeequine/request-booking" style="color:var(--teal);font-weight:700">Book a session with Southern Bee Equine</a><br><small>Powered by <a href="https://holistipro.com" style="color:var(--teal)">HolistiPro</a></small></footer>
+<script>
+/*LOGIC-START*/
+const AREAS={horse:[["Poll / neck","moderate"],["Back / saddle area","deep"],["SI / hindquarters","deep"],["Stifle","deep"],["Hock","moderate"],["Fetlock / lower leg","superficial"],["Hoof / coronet","superficial"]],
+dog:[["Neck","moderate"],["Back","moderate"],["Hips","deep"],["Shoulder","moderate"],["Elbow","superficial"],["Knee (stifle)","moderate"],["Paws / wrists","superficial"]],
+cat:[["Neck","superficial"],["Back","superficial"],["Hips","moderate"],["Elbow","superficial"],["Knee (stifle)","superficial"],["Paws","superficial"]],
+human:[["Neck / shoulders","moderate"],["Upper back","moderate"],["Lower back","deep"],["Hips","deep"],["Knees","moderate"],["Elbows / wrists / hands","superficial"],["Feet / ankles","superficial"]]};
+const DEVICES={
+pad:{name:"Contact pad or wrap",type:"contact",irr:10,info:"Placed directly on the body."},
+boot:{name:"Boot / leg or hoof wrap",type:"contact",irr:10,info:"Contact boot or wrap."},
+cap:{name:"Cap / hood",type:"contact",irr:10,info:"Contact cap or hood. Shield the eyes."},
+lamp:{name:"Panel or lamp (used at a distance)",type:"lamp",irr:20,info:"Estimate is at 1 inch and scaled by distance."},
+laser:{name:"Handheld laser / probe",type:"laser",irr:100,info:"Enter optical mW and spot area if known."}};
+const DIST={0:1.4,1:1,6:0.4,12:0.15}; // relative to 1 inch (estimate)
+const BASE={superficial:4,moderate:6,deep:8}, CAP={superficial:10,moderate:10,deep:12};
+function compute(o){
+  const depth=o.depth; let f=BASE[depth], notes=[], warns=[];
+  f*={relax:0.75,recovery:1,comfort:1,circ:0.9,maint:0.7}[o.goal];
+  if(o.onset==="recent"){f*=0.8;notes.push("Recent concern: lower dose, more frequent short sessions.");}
+  if(o.age==="young")f*=0.8; if(o.age==="senior")f*=0.85;
+  if(o.coat==="thick"){f*=1.2;notes.push("Thick coat blocks light: part the hair or use contact; dose raised slightly.");}
+  if(o.color==="dark"){f*=0.85;warns.push("Dark coat/skin absorbs more at the surface and warms faster — check heat every 2 minutes.");}
+  if((o.species==="dog"||o.species==="cat")&&o.size==="small")f*=0.8;
+  if(o.species==="cat")f*=0.9;
+  const p=o.pain; if(p>=7){f*=0.6;warns.push("High discomfort: start at this low dose, watch the reaction, and check with your vet/doctor.");} else if(p>=4)f*=0.8;
+  f=Math.max(2,Math.min(CAP[depth],f)); f=Math.round(f*10)/10;
+  if(o.age==="young"&&o.devType==="laser")warns.push("Young/growing: do not use the laser over growth plates (joint ends).");
+  if(o.flags)warns.push("Pregnancy, photosensitizing meds/topicals or known lump/growth: don't use over that area without vet/doctor approval.");
+  if(o.species==="human"&&o.area.startsWith("Neck"))warns.push("Avoid the front of the neck (thyroid).");
+  if(o.devType==="laser"||o.area.startsWith("Poll"))warns.push("Near the head: shield eyes and never aim at them.");
+  let irr=o.irr; if(o.devType==="lamp")irr=irr*DIST[o.dist]; if(o.power)irr=irr*o.power/100;
+  let sec=f/(irr/1000), out={fluence:f,irr:Math.round(irr*10)/10,notes,warns};
+  if(o.devType==="laser"){
+    const cap=60; let s;
+    if(o.laserMode==="energy"){const J=Math.round(f*o.laserArea*10)/10; s=J/(o.laserMw/1000); out.energyJ=J;} else s=sec;
+    s=Math.min(cap,Math.max(5,Math.round(s))); out.perSpotSec=s; out.energyJ=Math.round(o.laserMw/1000*s*10)/10;
+    out.spacing=Math.round(Math.sqrt(o.laserArea)*10)/10;
+    out.spots={superficial:6,moderate:8,deep:10}[depth]; const tot=s*out.spots/60; out.totalMin=Math.round(tot*10)/10;
+    out.timer=snap(tot,o.presets);
+  } else {
+    const capS=20*60; if(sec>capS){sec=capS;notes.push("Capped at 20 min — measure irradiance; your device may be stronger than the estimate.");}
+    out.sessionMin=Math.round(sec/60*10)/10; if(o.presets)out.timer=snap(sec/60,o.presets);
+  }
+  out.freq=o.onset==="recent"?"3–5 short sessions/week for 1–2 weeks, then reassess":o.goal==="maint"||o.goal==="relax"?"1–3 sessions/week":"2–3 sessions/week, at least 24–48 h apart";
+  return out;
+}
+function snap(min,pr){if(!pr)return null;const below=pr.filter(x=>x<=min);if(below.length)return {preset:below[below.length-1],stopAt:null,txt:`Set timer to ${below[below.length-1]} min (nearest preset at or under the target)`};
+  return {preset:pr[0],stopAt:min,txt:`Set timer to ${pr[0]} min and stop manually at ${fmt(min*60)}`};}
+function fmt(s){s=Math.round(s);return s<60?s+" s":Math.floor(s/60)+" min"+(s%60?" "+s%60+" s":"");}
+/*LOGIC-END*/
+const $=id=>document.getElementById(id),KEY="sbe_public_devices",DB=JSON.parse(localStorage.getItem(KEY)||"{}");
+for(const k in DEVICES)$("device").add(new Option(DEVICES[k].name,k));
+function fillAreas(){const s=$("species").value;$("area").innerHTML="";AREAS[s].forEach(([n,d])=>$("area").add(new Option(n,d)));$("sizeL").style.display=(s==="dog"||s==="cat")?"":"none";}
+function loadDev(){const k=$("device").value,d=DEVICES[k],s=DB[k]||{};$("devInfo").textContent=d.info;
+  $("laserBox").style.display=d.type==="laser"?"":"none";$("distBox").style.display=d.type==="lamp"?"":"none";
+  $("irr").value=s.irr||"";$("laserMw").value=s.mw||"";$("laserArea").value=s.area||"";$("presets").value=s.presets||"";$("wl").value=s.wl||"";}
+function run(){const k=$("device").value,d=DEVICES[k];let irr=+$("irr").value,src="yours";
+  if(!irr&&d.type==="laser"&&+$("laserMw").value&&+$("laserArea").value){irr=+$("laserMw").value/+$("laserArea").value;src="calc";}
+  if(!irr){irr=d.irr;src="est";}
+  $("irrFlag").innerHTML=src==="yours"?"✔ Using your irradiance value.":src==="calc"?`✔ Calculated from your laser: ${irr.toFixed(1)} mW/cm².`:`⚠ <b>Generic estimate – not your device.</b> Using a conservative ${d.irr} mW/cm²${d.type==="lamp"?" at 1 inch":""} for this device type. Real devices vary widely; find or measure your real value (see below) for accurate times.`;
+  const pr=$("presets").value.split(/[ ,;]+/).map(Number).filter(x=>x>0).sort((a,b)=>a-b);
+  $("painV").textContent=$("pain").value;
+  const sel=$("area"),o={species:$("species").value,area:sel.options[sel.selectedIndex].text,depth:sel.value,goal:$("goal").value,onset:$("onset").value,age:$("age").value,coat:$("coat").value,color:$("color").value,size:$("size").value,pain:+$("pain").value,flags:$("flags").checked,devType:d.type,irr,dist:+$("dist").value,power:null,presets:pr.length?pr:null,laserMw:+$("laserMw").value||irr*4,laserArea:+$("laserArea").value||4,laserMode:$("laserMode").value};
+  if(d.type==="lamp"&&src!=="est")o.irr=irr/DIST[o.dist]; // user value is at their working distance
+  $("depthNote").textContent="Tissue depth: "+o.depth;
+  const r=compute(o);let h=`<h2>Suggested starting session</h2><div>Target dose: <b>${r.fluence} J/cm²</b> at ${r.irr} mW/cm²${src==="est"?" (estimate)":""}</div>`;
+  if(d.type==="laser")h+=`<div class="big">${r.perSpotSec} s per spot</div><div>≈ ${r.energyJ} J per spot · spots ~${r.spacing} cm apart (gridded) · ~${r.spots} spots ≈ ${r.totalMin} min total</div>${r.timer?`<div>${r.timer.txt}</div>`:""}`;
+  else h+=`<div class="big">${fmt(r.sessionMin*60)} per session</div>${r.timer?`<div>${r.timer.txt}</div>`:""}`;
+  h+=`<div>Frequency: <b>${r.freq}</b></div><div class="flag">Start low, observe for 24–48 h, adjust in small steps. If the reaction is good, you may increase time ~20%; if sore or uneasy, go back down or stop.</div>`;
+  r.notes.forEach(n=>h+=`<div class="muted">• ${n}</div>`);r.warns.forEach(w=>h+=`<div class="warn">⚠ ${w}</div>`);
+  $("result").innerHTML=h;}
+$("saveBtn").onclick=()=>{DB[$("device").value]={irr:$("irr").value,mw:$("laserMw").value,area:$("laserArea").value,presets:$("presets").value,wl:$("wl").value};localStorage.setItem(KEY,JSON.stringify(DB));$("saveBtn").textContent="Saved ✔";setTimeout(()=>$("saveBtn").textContent="Save my device settings",1500);};
+$("resetBtn").onclick=()=>{delete DB[$("device").value];localStorage.setItem(KEY,JSON.stringify(DB));loadDev();run();};
+function tmCorr(w){w=Math.min(w,1999);return w<=1000?w*0.0488:48.8+(w-1000)*(92-48.8)/999;}
+$("tm").oninput=()=>{const w=+$("tm").value;$("tmOut").innerHTML=w?`Raw ${(w/10).toFixed(1)} → <b>corrected ≈ ${tmCorr(w).toFixed(1)} mW/cm²</b> <button type="button" id="useTm" style="margin:6px 0 0">Use this value</button>`:"Enter a reading.";if(w)$("useTm").onclick=()=>{$("irr").value=tmCorr(w).toFixed(1);run();};};
+$("species").onchange=()=>{fillAreas();run()};$("device").onchange=()=>{loadDev();run()};
+document.querySelectorAll("select,input").forEach(e=>{if(!["species","device","tm"].includes(e.id))e.addEventListener("input",run)});
+fillAreas();loadDev();run();
+if("serviceWorker"in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js");
+</script></body></html>
