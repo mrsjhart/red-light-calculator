@@ -21,7 +21,7 @@ ol{padding-left:20px;font-size:.85rem}
 <section class="card"><h2>1. Who &amp; where</h2>
 <label>Species<select id="species"><option value="horse">Horse</option><option value="dog">Dog</option><option value="cat">Cat</option><option value="human">Human</option></select></label>
 <label>Body area<select id="area"></select></label><small id="depthNote"></small>
-<label>Goal<select id="goal"><option value="relax">Relaxation</option><option value="recovery">Muscle recovery after work</option><option value="comfort">Stiffness / comfort support (sore or tight muscles)</option><option value="circ">Circulation</option><option value="maint">Maintenance</option></select></label>
+<label>Goal<select id="goal"><option value="relax">Relaxation</option><option value="recovery">Muscle recovery after work</option><option value="wound">Wound recovery support</option><option value="comfort">Stiffness / comfort support (sore or tight muscles)</option><option value="circ">Circulation</option><option value="maint">Maintenance</option></select></label>
 <label>Area of concern is…<select id="onset"><option value="recent">Recent (last few days)</option><option value="ongoing">Long-term / ongoing</option><option value="none">No specific concern (routine)</option></select></label>
 <label>Age group<select id="age"><option value="young">Young / still growing</option><option value="adult" selected>Adult</option><option value="senior">Senior</option></select></label>
 <div class="row"><label>Coat / hair<select id="coat"><option value="clipped">Clipped / bare skin</option><option value="short" selected>Short / summer coat</option><option value="thick">Thick / winter coat</option></select></label>
@@ -82,8 +82,9 @@ laser:{name:"Handheld laser / probe",type:"laser",irr:100,info:"Enter optical mW
 const DIST={0:1.4,1:1,6:0.4,12:0.15}; // relative to 1 inch (estimate)
 const BASE={superficial:4,moderate:6,deep:8}, CAP={superficial:10,moderate:10,deep:12};
 function compute(o){
-  const depth=o.depth; let f=BASE[depth], notes=[], warns=[];
-  f*={relax:0.75,recovery:1,comfort:1,circ:0.9,maint:0.7}[o.goal];
+  const depth=o.goal==="wound"?"superficial":o.depth; let f=BASE[depth], notes=[], warns=[];
+  f*={relax:0.75,recovery:1,wound:0.7,comfort:1,circ:0.9,maint:0.7}[o.goal];
+  if(o.goal==="wound")notes.push("Wound support stays on the surface: use red light (about 630–660 nm).");
   if(o.onset==="recent"){f*=0.8;notes.push("Recent concern: lower dose, more frequent short sessions.");}
   if(o.age==="young")f*=0.8; if(o.age==="senior")f*=0.85;
   if(o.coat==="thick"){f*=1.2;notes.push("Thick coat blocks light: part the hair or use contact; dose raised slightly.");}
@@ -93,6 +94,7 @@ function compute(o){
   const p=o.pain; if(p>=7){f*=0.6;warns.push("High discomfort: start at this low dose, watch the reaction, and check with your vet/doctor.");} else if(p>=4)f*=0.8;
   f=Math.max(2,Math.min(CAP[depth],f)); f=Math.round(f*10)/10;
   if(o.age==="young"&&o.devType==="laser")warns.push("Young/growing: do not use the laser over growth plates (joint ends).");
+  if(o.goal==="wound")warns.push("Wound care: support only, not a treatment. Skip infection, active bleeding, and any wound your vet or doctor has not cleared. Stop if it worsens.");
   if(o.flags)warns.push("Pregnancy, photosensitizing meds/topicals or known lump/growth: don't use over that area without vet/doctor approval.");
   if(o.species==="human"&&o.area.startsWith("Neck"))warns.push("Avoid the front of the neck (thyroid).");
   if(o.devType==="laser"||o.area.startsWith("Poll"))warns.push("Near the head: shield eyes and never aim at them.");
@@ -109,7 +111,7 @@ function compute(o){
     const capS=20*60; if(sec>capS){sec=capS;notes.push("Capped at 20 min — measure irradiance; your device may be stronger than the estimate.");}
     out.sessionMin=Math.round(sec/60*10)/10; if(o.presets)out.timer=snap(sec/60,o.presets);
   }
-  out.freq=o.onset==="recent"?"3–5 short sessions/week for 1–2 weeks, then reassess":o.goal==="maint"||o.goal==="relax"?"1–3 sessions/week":"2–3 sessions/week, at least 24–48 h apart";
+  out.freq=o.goal==="wound"?"Every 1–2 days for 1–2 weeks, then reassess":o.onset==="recent"?"3–5 short sessions/week for 1–2 weeks, then reassess":o.goal==="maint"||o.goal==="relax"?"1–3 sessions/week":"2–3 sessions/week, at least 24–48 h apart";
   return out;
 }
 function snap(min,pr){if(!pr)return null;const below=pr.filter(x=>x<=min);if(below.length)return {preset:below[below.length-1],stopAt:null,txt:`Set timer to ${below[below.length-1]} min (nearest preset at or under the target)`};
@@ -129,6 +131,7 @@ function run(){const k=$("device").value,d=DEVICES[k];let irr=+$("irr").value,sr
   const pr=$("presets").value.split(/[ ,;]+/).map(Number).filter(x=>x>0).sort((a,b)=>a-b);
   $("painV").textContent=$("pain").value;
   const sel=$("area"),o={species:$("species").value,area:sel.options[sel.selectedIndex].text,depth:sel.value,goal:$("goal").value,onset:$("onset").value,age:$("age").value,coat:$("coat").value,color:$("color").value,size:$("size").value,pain:+$("pain").value,flags:$("flags").checked,devType:d.type,irr,dist:+$("dist").value,power:null,presets:pr.length?pr:null,laserMw:+$("laserMw").value||irr*4,laserArea:+$("laserArea").value||4,laserMode:$("laserMode").value};
+  if(o.goal==="wound")o.depth="superficial";
   if(d.type==="lamp"&&src!=="est")o.irr=irr/DIST[o.dist]; // user value is at their working distance
   $("depthNote").textContent="Tissue depth: "+o.depth;
   const r=compute(o);let h=`<h2>Suggested starting session</h2><div>Target dose: <b>${r.fluence} J/cm²</b> at ${r.irr} mW/cm²${src==="est"?" (estimate)":""}</div>`;
