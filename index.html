@@ -18,11 +18,22 @@ button:disabled{opacity:.45}ol{padding-left:20px;font-size:.85rem}
 #printSheet{display:none}
 @media print{
   body.printing-summary header,body.printing-summary main,body.printing-summary footer{display:none!important}
-  body.printing-summary #printSheet{display:block!important;max-width:720px;margin:0 auto;color:#14262B}
-  #printSheet h1{color:#103C4A;font-size:1.4rem;margin:0;border-bottom:4px solid #C5A059;padding-bottom:6px}
-  #printSheet h2{margin:14px 0 4px}
-  #printSheet p{margin:4px 0}
+  body.printing-summary #printSheet{display:block!important;max-width:740px;margin:0 auto;color:#14262B}
 }
+#printSheet .band{background:#103C4A;color:#fff;padding:16px 18px 12px;border-bottom:6px solid #C5A059}
+#printSheet .band h1{margin:0;font-size:1.45rem;color:#fff}#printSheet .band p{margin:4px 0 0;color:#fff}
+#printSheet .glance{background:#FBF5E8;border:2px solid #C5A059;border-radius:12px;padding:12px 14px;margin:12px 0}
+#printSheet .glance h2,#printSheet .about h2,#printSheet .howto h2,#printSheet .watch h2,#printSheet .tech h2{margin:0 0 8px;font-size:.95rem}
+#printSheet .cols{display:grid;grid-template-columns:1.1fr 1.2fr .9fr;gap:10px}
+#printSheet .k{display:block;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:#566}
+#printSheet .big{font-size:1.55rem;font-weight:800;color:#103C4A;line-height:1.15}
+#printSheet .about{background:#E8F0F1;border-left:6px solid #103C4A;padding:10px 12px;margin:10px 0}
+#printSheet .howto{border-left:6px solid #C5A059;padding:10px 12px;margin:10px 0}
+#printSheet .watch{background:#FDECEA;border-left:6px solid #C0392B;padding:10px 12px;margin:10px 0}
+#printSheet .tech{background:#F4F6F6;padding:8px 12px;margin:10px 0;font-size:.78rem;color:#334}
+#printSheet ol,#printSheet ul{margin:0;padding-left:18px}#printSheet li{margin:3px 0}
+#printSheet .pairs{display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;margin:0}
+#printSheet .foot{margin-top:12px;font-size:.78rem;color:#103C4A}
 </style></head><body>
 <header><h1>Southern Bee Equine – Red Light Session Calculator</h1><p>Wellness session-time guide · start low, observe, adjust</p></header>
 <main>
@@ -235,39 +246,110 @@ $("shareBtn").onclick=async()=>{
   try{await navigator.clipboard.writeText(text);flash("Copied");}
   catch{const a=document.createElement("a");a.href="mailto:?subject="+encodeURIComponent(title)+"&body="+encodeURIComponent(text);a.click();flash("Email draft opened");}
 };
-const WIN={"–":0x96,"—":0x97,"•":0x95,"’":0x92,"‘":0x91,"“":0x93,"”":0x94,"…":0x85,"²":0xB2,"é":0xE9,"×":0xD7};
-function pdfHex(s){let h="";for(const ch of String(s)){let b=WIN[ch];if(b==null){const c=ch.codePointAt(0);b=(c>=32&&c<=126)||(c>=160&&c<=255)?c:63;}h+=b.toString(16).padStart(2,"0");}return "<"+h+">";}
-function charW(ch){const c=ch.codePointAt(0);if(c===32||ch==="."||ch===","||ch==="'"||ch==="i"||ch==="l"||ch==="I"||ch==="j")return 278;if(ch==="m"||ch==="w")return 833;if(ch==="M"||ch==="W")return 900;if(ch==="f"||ch==="t"||ch==="r"||ch==="-")return 333;if(c>=48&&c<=57)return 556;if(c>=65&&c<=90)return 667;return 520;}
-function wrapPdf(text,size,max){const words=String(text).split(/\s+/).filter(Boolean),width=s=>[...s].reduce((a,ch)=>a+charW(ch)*size/1000,0);const lines=[];let line="";for(const word of words){const trial=line?line+" "+word:word;if(line&&width(trial)>max){lines.push(line);line=word;}else line=trial;}if(line)lines.push(line);return lines.length?lines:[""];}
+function pdfSafe(s){
+  return String(s)
+    .replace(/\u00B2/g,"^2")
+    .replace(/[\u2010-\u2015\u2212]/g,"-")
+    .replace(/[\u2018\u2019]/g,"'")
+    .replace(/[\u201C\u201D]/g,'"')
+    .replace(/\u2026/g,"...")
+    .replace(/[\u2022\u00B7]/g,"-")
+    .replace(/\u00D7/g,"x")
+    .replace(/\u00E9/g,"e")
+    .replace(/\u00A0/g," ")
+    .replace(/~/g,"about ")
+    .replace(/[^\x20-\x7E]/g," ")
+    .replace(/[ ]{2,}/g," ")
+    .trim();
+}
+function pdfHex(s){let h="";for(const ch of pdfSafe(s)){const c=ch.charCodeAt(0);h+=(c>=32&&c<=126?c:32).toString(16).padStart(2,"0");}return "<"+h+">";}
+function charW(ch){const c=ch.charCodeAt(0);if(c===32||ch==="."||ch===","||ch==="'"||ch==="i"||ch==="l"||ch==="I"||ch==="j")return 278;if(ch==="m"||ch==="w")return 833;if(ch==="M"||ch==="W")return 900;if(ch==="f"||ch==="t"||ch==="r"||ch==="-")return 333;if(c>=48&&c<=57)return 556;if(c>=65&&c<=90)return 667;return 520;}
+function wrapPdf(text,size,max){const words=pdfSafe(text).split(/\s+/).filter(Boolean),width=s=>[...s].reduce((a,ch)=>a+charW(ch)*size/1000,0);const lines=[];let line="";for(const word of words){const trial=line?line+" "+word:word;if(line&&width(trial)>max){lines.push(line);line=word;}else line=trial;}if(line)lines.push(line);return lines.length?lines:[""];}
+function pick(list,k){const f=list.find(r=>r[0]===k);return f?f[1]:"";}
+function sentence(t){t=String(t||"").trim();if(!t)return "";return /[.!]$/.test(t)?t:t+".";}
+function handout(s){
+  const area=pick(s.rows,"Body area")||"the area",device=pick(s.rows,"Device")||"the device";
+  const time=pick(s.results,"Session time"),per=pick(s.results,"Time per spot"),timer=pick(s.results,"Timer"),freq=pick(s.results,"Frequency");
+  const steps=[];
+  if(per)steps.push("On the "+area.toLowerCase()+", use the laser for "+per+" at each spot"+(pick(s.results,"Layout")?" ("+pick(s.results,"Layout")+").":"."));
+  else steps.push("Place the "+device.toLowerCase()+" on the "+area.toLowerCase()+" for "+time+".");
+  steps.push(timer?sentence(timer):"No timer preset was entered. Use a clock and stop at the session time.");
+  const gradual=freq.includes("Start gradually")?freq.slice(freq.indexOf("Start gradually")).trim():"";
+  if(gradual)steps.push(sentence(gradual));
+  steps.push(sentence(s.observe));
+  s.notes.filter(n=>/red light|surface|coat|hair/i.test(n)).forEach(n=>steps.push(sentence(n)));
+  const watch=s.warns.map(sentence);
+  s.notes.filter(n=>!/red light|surface|coat|hair/i.test(n)).forEach(n=>watch.push(sentence(n)));
+  s.safety.forEach(t=>watch.push(sentence(t)));
+  const about=[];
+  if(s.client)about.push(["Client",s.client]);
+  if(s.animal)about.push(["Animal",s.animal]);
+  ["Species","Body area","Goal","Device"].forEach(k=>{const v=pick(s.rows,k);if(v)about.push([k==="Body area"?"Area":k,v]);});
+  const labels={"Target dose":"Dose","Irradiance at skin":"Irradiance","Device watts (from label)":"Label watts","Tissue depth":"Depth","Comfort / discomfort":"Comfort","Coat / hair":"Coat","Coat / skin color":"Coat color","Age group":"Age","Area of concern":"Concern","Optical output":"Optical output","Spot / aperture area":"Spot area","Laser dosing method":"Laser method","Energy per spot":"Energy per spot"};
+  const tech=[];
+  ["Target dose","Irradiance at skin","Device watts (from label)","Wavelengths","Tissue depth","Comfort / discomfort","Coat / hair","Coat / skin color","Age group","Area of concern","Optical output","Spot / aperture area","Laser dosing method","Distance","Energy per spot"].forEach(k=>{
+    const v=pick(s.results,k)||pick(s.rows,k);if(v&&v!=="not entered")tech.push([labels[k]||k,v]);
+  });
+  const often=(pdfSafe(freq).match(/\d-\d times\/week/)||[])[0]||pdfSafe(freq).split(".")[0];
+  const timerShort=timer?timer.replace(/^Set timer to /,"").replace(" and stop manually at ",", stop at "):"Use a clock";
+  return {time:time||(per?per+" per spot":""),timer,timerShort,freq,often,steps,watch,about,tech,date:s.dateLabel,disc:s.disc};
+}
 function buildPdf(s){
-  const pages=[];let cmds=null,y=0;
-  const ink=[0.078,0.149,0.169],teal=[0.063,0.235,0.290],muted=[0.33,0.4,0.4];
-  const text=(font,size,x,yy,str,rgb)=>rgb.map(n=>n.toFixed(3)).join(" ")+" rg\nBT /"+font+" "+size+" Tf 1 0 0 1 "+x+" "+yy+" Tm "+pdfHex(str)+" Tj ET\n";
-  function closePage(){if(!cmds)return;cmds.push(text("F1",8,40,34,"Southern Bee Equine  ·  southernbeeequine@gmail.com  ·  (972) 342-3022",teal));cmds.push(text("F1",8,40,22,"Wellness guide only — not veterinary or medical advice.",muted));pages.push(cmds.join(""));cmds=null;}
-  function newPage(){closePage();cmds=[];cmds.push("0.063 0.235 0.290 rg\n0 746 612 46 re f\n0.773 0.627 0.349 rg\n0 740 612 6 re f\n");cmds.push(text("F2",16,40,764,"Southern Bee Equine",[1,1,1]));cmds.push(text("F1",9,40,750,"Red light session summary",[1,1,1]));y=722;}
-  function need(h){if(y-h<52)newPage();}
-  function para(font,size,str,rgb,gap){const lines=wrapPdf(str,size,524);need(lines.length*(size+3)+gap);for(const line of lines){cmds.push(text(font,size,40,y,line,rgb));y-=size+3;}y-=gap;}
-  function heading(label){need(22);cmds.push(text("F2",12,40,y,label,teal));cmds.push("0.773 0.627 0.349 rg\n40 "+(y-4)+" 78 2 re f\n");y-=18;}
+  const h=handout(s),pages=[],ink=[0.078,0.149,0.169],teal=[0.063,0.235,0.290],gold=[0.773,0.627,0.349],muted=[0.33,0.40,0.42],white=[1,1,1];
+  const goldTint=[0.984,0.961,0.910],tealTint=[0.910,0.941,0.945],warnTint=[0.992,0.925,0.918],techTint=[0.957,0.965,0.965],warnBar=[0.753,0.224,0.169];
+  let cmds=null,y=0;
+  const text=(font,size,x,yy,str,rgb)=>rgb.map(n=>n.toFixed(3)).join(" ")+" rg\nBT /"+font+" "+size+" Tf 1 0 0 1 "+x.toFixed(1)+" "+yy.toFixed(1)+" Tm "+pdfHex(str)+" Tj ET\n";
+  const box=(x,top,w,hh,fill,bar)=>{let o=fill.map(n=>n.toFixed(3)).join(" ")+" rg\n"+x+" "+(top-hh).toFixed(1)+" "+w+" "+hh.toFixed(1)+" re f\n";if(bar)o+=bar.map(n=>n.toFixed(3)).join(" ")+" rg\n"+x+" "+(top-hh).toFixed(1)+" 5 "+hh.toFixed(1)+" re f\n";cmds.push(o);};
+  const widthOf=(str,size)=>[...pdfSafe(str)].reduce((a,ch)=>a+charW(ch)*size/1000,0);
+  function footer(){
+    cmds.push(text("F2",8,32,40,"Southern Bee Equine",teal));
+    cmds.push(text("F1",8,138,40,"southernbeeequine@gmail.com   |   (972) 342-3022",teal));
+    const lines=wrapPdf(h.disc,7.5,548);
+    let yy=28;lines.forEach(line=>{cmds.push(text("F1",7.5,32,yy,line,muted));yy-=9;});
+  }
+  function newPage(){if(cmds)pages.push(cmds.join(""));cmds=[];cmds.push("0.063 0.235 0.290 rg\n0 744 612 48 re f\n0.773 0.627 0.349 rg\n0 740 612 4 re f\n");cmds.push(text("F2",16,32,768,"Southern Bee Equine",white));cmds.push(text("F1",9,32,754,"Red light session summary",white));const dx=580-widthOf(h.date,9);cmds.push(text("F1",9,dx,760,h.date,white));y=726;}
+  function need(hh){if(y-hh<78)newPage();}
   newPage();
-  para("F1",10,s.dateLabel,ink,2);
-  if(s.client)para("F1",10,"Client / patient: "+s.client,ink,1);
-  if(s.animal)para("F1",10,"Animal name / species: "+s.animal,ink,1);
-  y-=6;heading("Inputs");s.rows.forEach(([k,v])=>para("F1",9,k+": "+v,ink,1));
-  y-=4;heading("Suggested starting session");s.results.forEach(([k,v])=>para(k==="Frequency"?"F2":"F1",9,k+": "+v,ink,1));
-  y-=3;para("F3",9,s.observe,ink,2);
-  s.notes.forEach(n=>para("F1",9,"• "+n,muted,1));
-  s.warns.forEach(w=>para("F1",9,"• "+w,ink,1));
-  y-=4;heading("Safety");s.safety.forEach(t=>para("F1",9,"• "+t,ink,1));
-  y-=4;para("F3",9,s.disc,ink,2);
-  closePage();
+  const freqLines=wrapPdf(h.freq,9,520),glanceH=78+freqLines.length*12;
+  need(glanceH+8);box(28,y,556,glanceH,goldTint,null);cmds.push("0.773 0.627 0.349 RG\n1.3 w\n28 "+(y-glanceH).toFixed(1)+" 556 "+glanceH.toFixed(1)+" re S\n");
+  let gy=y-16;cmds.push(text("F2",8,40,gy,"YOUR SESSION AT A GLANCE",teal));gy-=16;
+  cmds.push(text("F1",7.5,40,gy,"SESSION TIME",muted));cmds.push(text("F1",7.5,210,gy,"TIMER SETTING",muted));cmds.push(text("F1",7.5,400,gy,"HOW OFTEN",muted));gy-=18;
+  cmds.push(text("F2",16,40,gy,h.time,teal));
+  wrapPdf(h.timerShort,9,175).slice(0,2).forEach((line,i)=>cmds.push(text("F2",9,210,gy-i*11,line,ink)));
+  cmds.push(text("F2",11,400,gy,h.often,teal));gy-=22;
+  freqLines.forEach(line=>{cmds.push(text("F1",9,40,gy,line,ink));gy-=12;});
+  y-=glanceH+10;
+  const aboutLines=Math.ceil(h.about.length/2),aboutH=28+aboutLines*14;
+  need(aboutH);box(28,y,556,aboutH,tealTint,teal);
+  let ay=y-16;cmds.push(text("F2",11,42,ay,"About this session",teal));ay-=16;
+  for(let i=0;i<h.about.length;i++){const col=i%2,row=Math.floor(i/2),x=col?306:42,yy=ay-row*14,label=h.about[i][0]+":";cmds.push(text("F2",9,x,yy,label,teal));cmds.push(text("F1",9,x+widthOf(label,9)*1.08+8,yy,h.about[i][1],ink));}
+  y-=aboutH+10;
+  const stepLines=h.steps.map(st=>wrapPdf(st,9.5,500));
+  const howH=40+stepLines.reduce((a,ls)=>a+ls.length*12+4,0);
+  need(howH);box(28,y,556,howH,[1,1,1],gold);cmds.push("0.910 0.941 0.945 rg\n33 "+(y-howH).toFixed(1)+" 546 "+howH.toFixed(1)+" re f\n0.773 0.627 0.349 rg\n28 "+(y-howH).toFixed(1)+" 6 "+howH.toFixed(1)+" re f\n");
+  let hy=y-16;cmds.push(text("F2",11,42,hy,"How to do it",teal));hy-=16;
+  stepLines.forEach((ls,i)=>{ls.forEach((line,li)=>{cmds.push(text(li?"F1":"F2",9.5,li?58:42,hy,(li?line:(i+1)+". "+line),ink));hy-=12;});hy-=4;});
+  y-=howH+10;
+  const watchLines=h.watch.map(w=>wrapPdf(w,9,500));
+  const watchH=36+watchLines.reduce((a,ls)=>a+ls.length*12+3,0);
+  need(watchH);box(28,y,556,watchH,warnTint,warnBar);
+  let wy=y-16;cmds.push(text("F2",11,42,wy,"Watch for",warnBar));wy-=15;
+  watchLines.forEach(ls=>{ls.forEach((line,li)=>{cmds.push(text("F1",9,li?52:42,wy,(li?line:"- "+line),ink));wy-=12;});wy-=3;});
+  y-=watchH+10;
+  const techLines=h.tech.map(([k,v])=>k+": "+v);
+  const techRows=Math.ceil(techLines.length/2),techH=26+techRows*11+4;
+  need(techH);box(28,y,556,techH,techTint,null);
+  let ty=y-15;cmds.push(text("F2",9,40,ty,"Technical details",muted));ty-=13;
+  techLines.forEach((line,i)=>{const col=i%2,row=Math.floor(i/2);cmds.push(text("F1",8,col?310:40,ty-row*11,line,muted));});
+  y-=techH;
+  footer();pages.push(cmds.join(""));
   const objects=["<< /Type /Catalog /Pages 2 0 R >>",""];
-  const fontN=3,pageStart=6,kids=[];
+  const fontN=3,pageStart=6;
   objects[1]="<< /Type /Pages /Kids ["+pages.map((_,i)=>(pageStart+i*2)+" 0 R").join(" ")+"] /Count "+pages.length+" >>";
-  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
-  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>");
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding >>");
   pages.forEach((stream,i)=>{
-    kids.push(pageStart+i*2);
     objects.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents "+(pageStart+i*2+1)+" 0 R /Resources << /Font << /F1 "+fontN+" 0 R /F2 "+(fontN+1)+" 0 R /F3 "+(fontN+2)+" 0 R >> >> >>");
     objects.push("<< /Length "+stream.length+" >>\nstream\n"+stream+"endstream");
   });
@@ -278,12 +360,13 @@ function buildPdf(s){
   out+="xref\n0 "+(objects.length+1)+"\n0000000000 65535 f \n";
   for(let i=1;i<offsets.length;i++)out+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";
   out+="trailer\n<< /Size "+(objects.length+1)+" /Root 1 0 R /Info "+objects.length+" 0 R >>\nstartxref\n"+xref+"\n%%EOF";
-  const bytes=new Uint8Array(out.length);for(let i=0;i<out.length;i++)bytes[i]=out.charCodeAt(i);return bytes;
+  const bytes=new Uint8Array(out.length);for(let i=0;i<out.length;i++)bytes[i]=out.charCodeAt(i)&255;return bytes;
 }
 function fillPrint(s){
-  const esc=t=>String(t).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
-  const row=(k,v)=>"<p><b>"+esc(k)+":</b> "+esc(v)+"</p>";
-  $("printSheet").innerHTML="<h1>Southern Bee Equine</h1><p>Red light session summary · "+esc(s.dateLabel)+"</p>"+(s.client?row("Client / patient",s.client):"")+(s.animal?row("Animal name / species",s.animal):"")+"<h2>Inputs</h2>"+s.rows.map(([k,v])=>row(k,v)).join("")+"<h2>Suggested starting session</h2>"+s.results.map(([k,v])=>row(k,v)).join("")+"<p>"+esc(s.observe)+"</p>"+s.notes.map(n=>"<p>• "+esc(n)+"</p>").join("")+s.warns.map(w=>"<p>• "+esc(w)+"</p>").join("")+"<h2>Safety</h2>"+s.safety.map(t=>"<p>• "+esc(t)+"</p>").join("")+"<p><b>"+esc(s.disc)+"</b></p><p>Southern Bee Equine<br>southernbeeequine@gmail.com<br>(972) 342-3022</p>";
+  const esc=t=>pdfSafe(t).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  const d=handout(s);
+  const pair=(k,v)=>"<p><b>"+esc(k)+":</b> "+esc(v)+"</p>";
+  $("printSheet").innerHTML="<div class='band'><h1>Southern Bee Equine</h1><p>Red light session summary<br>"+esc(d.date)+"</p></div><section class='glance'><h2>Your session at a glance</h2><div class='cols'><div><span class='k'>Session time</span><span class='big'>"+esc(d.time)+"</span></div><div><span class='k'>Timer setting</span><b>"+esc(d.timerShort)+"</b></div><div><span class='k'>How often</span><b>"+esc(d.often)+"</b></div></div><p>"+esc(d.freq)+"</p></section><section class='about'><h2>About this session</h2><div class='pairs'>"+d.about.map(([k,v])=>pair(k,v)).join("")+"</div></section><section class='howto'><h2>How to do it</h2><ol>"+d.steps.map(st=>"<li>"+esc(st)+"</li>").join("")+"</ol></section><section class='watch'><h2>Watch for</h2><ul>"+d.watch.map(w=>"<li>"+esc(w)+"</li>").join("")+"</ul></section><section class='tech'><h2>Technical details</h2><div class='pairs'>"+d.tech.map(([k,v])=>pair(k,v)).join("")+"</div></section><p class='foot'><b>Southern Bee Equine</b><br>southernbeeequine@gmail.com<br>(972) 342-3022</p><p>"+esc(d.disc)+"</p>";
 }
 function pdfName(d){const z=n=>String(n).padStart(2,"0");return "southern-bee-equine-session-"+d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+".pdf";}
 $("pdfBtn").onclick=async()=>{
