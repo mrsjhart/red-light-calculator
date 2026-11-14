@@ -13,7 +13,16 @@ input[type=range]{padding:0;border:0;accent-color:var(--teal)}.row{display:grid;
 .flag{background:var(--gold2);border-left:5px solid var(--gold);padding:8px 10px;border-radius:8px;font-size:.88rem;margin-top:8px}
 .big{font-size:2rem;font-weight:800;color:var(--teal)}.res div{margin:6px 0}.warn{background:#fdecea;border-left:5px solid #c0392b;padding:8px 10px;border-radius:8px;margin:6px 0;font-size:.9rem}
 .disc{background:var(--teal2);border:2px solid var(--teal);border-radius:12px;padding:12px;font-weight:600}small,.muted{color:#566;font-size:.85rem}button{min-height:46px;background:var(--gold);color:var(--teal);border:0;border-radius:10px;font-weight:700;padding:0 16px;font-size:16px;margin-top:10px}
-ol{padding-left:20px;font-size:.85rem}
+button:disabled{opacity:.45}ol{padding-left:20px;font-size:.85rem}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}.actions button{margin-top:0}
+#printSheet{display:none}
+@media print{
+  body.printing-summary header,body.printing-summary main,body.printing-summary footer{display:none!important}
+  body.printing-summary #printSheet{display:block!important;max-width:720px;margin:0 auto;color:#14262B}
+  #printSheet h1{color:#103C4A;font-size:1.4rem;margin:0;border-bottom:4px solid #C5A059;padding-bottom:6px}
+  #printSheet h2{margin:14px 0 4px}
+  #printSheet p{margin:4px 0}
+}
 </style></head><body>
 <header><h1>Southern Bee Equine – Red Light Session Calculator</h1><p>Wellness session-time guide · start low, observe, adjust</p></header>
 <main>
@@ -32,6 +41,8 @@ ol{padding-left:20px;font-size:.85rem}
 </section>
 <section class="card"><h2>2. Your device</h2>
 <label>Device type<select id="device"></select></label><div id="devInfo" class="muted"></div>
+<label>Device watts (from label)<input type="number" id="watts" min="0" step="0.1" inputmode="decimal" placeholder="from the label"></label>
+<small>Label wattage is wall power, not light output. It does not change the session time.</small>
 <label>Wavelengths (optional, e.g. 660 / 850 nm)<input id="wl" placeholder="e.g. 660 + 850 nm"></label>
 <div id="laserBox"><div class="row"><label>Total optical output (mW)<input type="number" id="laserMw" step="10" placeholder="from manual"></label><label>Spot / aperture area (cm²)<input type="number" id="laserArea" step="0.5" placeholder="e.g. 1–4"></label></div>
 <small>Use <b>optical</b> output (mW of light), not the electrical watts on the plug.</small>
@@ -50,7 +61,21 @@ ol{padding-left:20px;font-size:.85rem}
 <small>Raw: W/m² ÷ 10 = mW/cm². GembaRed's lab comparison found the TM-206 reads about 2× high on red/NIR LEDs, and fit a non-linear correction for mixed red+NIR. This approximates their curve through their published points (1000 W/m² → 48.8 mW/cm²; meter max ≈ 92 mW/cm²). For exact values, or red-only / NIR-only devices, use GembaRed's own calculators. Measure at your real working distance.</small></details>
 </section>
 <section class="card full res" id="result"></section>
-<section class="card full"><h2>Safety checklist</h2><ul>
+<section class="card full" id="handoff">
+<h2>3. Share with a client</h2>
+<p class="muted">Names are optional and stay in this tab only. They are not saved.</p>
+<div class="row">
+<label>Client / patient name (optional)<input id="clientName" autocomplete="off" placeholder="Optional"></label>
+<label>Animal name / species (optional)<input id="animalName" autocomplete="off" placeholder="Optional"></label>
+</div>
+<div class="actions">
+<button type="button" id="shareBtn" disabled>Share results</button>
+<button type="button" id="pdfBtn" disabled style="background:var(--teal);color:#fff">Download PDF</button>
+<span id="copyNote" role="status"></span>
+</div>
+<small>On iPhone, Share opens your message and email apps, and Download PDF opens the share sheet so you can save the file. On a computer, Share copies the summary and Download PDF saves a PDF.</small>
+</section>
+<section class="card full"><h2>Safety checklist</h2><ul id="safetyList">
 <li>Eye protection for people; never aim at eyes (human or animal). Cover/shield animal eyes when working near the head.</li>
 <li>Check skin and coat for heat every 2–3 minutes; extra caution on dark coats/skin. Stop if warm to the touch or the animal/person is uneasy.</li>
 <li>Avoid: laser over open growth plates in young animals; over known tumors/cancer; pregnant abdomen; thyroid area; active bleeding; after photosensitizing meds or topicals.</li>
@@ -67,6 +92,7 @@ ol{padding-left:20px;font-size:.85rem}
 <li>GembaRed. Budget Intensity Measurements for Red Light Therapy Part 1 of 3: Tenmars TM-206 (June 25, 2022). gembared.com/blogs/musings/budget-intensity-measurements-for-red-light-therapy-part-1-of-3-tenmars-tm-206</li>
 </ol></section>
 </main><footer style="text-align:center;padding:18px;color:#556;font-size:.85rem">Created by Jessica Hart, Southern Bee Equine · <a href="mailto:southernbeeequine@gmail.com" style="color:var(--teal)">southernbeeequine@gmail.com</a><br><a href="https://holistipro.com/sites/southernbeeequine/request-booking" style="color:var(--teal);font-weight:700">Book a session with Southern Bee Equine</a><br><small>Powered by <a href="https://holistipro.com" style="color:var(--teal)">HolistiPro</a></small></footer>
+<section id="printSheet"></section>
 <script>
 /*LOGIC-START*/
 const AREAS={horse:[["Poll / neck","moderate"],["Back / saddle area","deep"],["SI / hindquarters","deep"],["Stifle","deep"],["Hock","moderate"],["Fetlock / lower leg","superficial"],["Hoof / coronet","superficial"]],
@@ -78,7 +104,8 @@ pad:{name:"Contact pad or wrap",type:"contact",irr:10,info:"Placed directly on t
 boot:{name:"Boot / leg or hoof wrap",type:"contact",irr:10,info:"Contact boot or wrap."},
 cap:{name:"Cap / hood",type:"contact",irr:10,info:"Contact cap or hood. Shield the eyes."},
 lamp:{name:"Panel or lamp (used at a distance)",type:"lamp",irr:20,info:"Estimate is at 1 inch and scaled by distance."},
-laser:{name:"Handheld laser / probe",type:"laser",irr:100,info:"Enter optical mW and spot area if known."}};
+laser:{name:"Handheld laser / probe",type:"laser",irr:100,info:"Enter optical mW and spot area if known."},
+custom:{name:"Custom device",type:"contact",irr:10,info:"Enter your measured irradiance if you know it."}};
 const DIST={0:1.4,1:1,6:0.4,12:0.15}; // relative to 1 inch (estimate)
 const BASE={superficial:4,moderate:6,deep:8}, CAP={superficial:10,moderate:10,deep:12};
 function compute(o){
@@ -123,7 +150,8 @@ for(const k in DEVICES)$("device").add(new Option(DEVICES[k].name,k));
 function fillAreas(){const s=$("species").value;$("area").innerHTML="";AREAS[s].forEach(([n,d])=>$("area").add(new Option(n,d)));$("sizeL").style.display=(s==="dog"||s==="cat")?"":"none";}
 function loadDev(){const k=$("device").value,d=DEVICES[k],s=DB[k]||{};$("devInfo").textContent=d.info;
   $("laserBox").style.display=d.type==="laser"?"":"none";$("distBox").style.display=d.type==="lamp"?"":"none";
-  $("irr").value=s.irr||"";$("laserMw").value=s.mw||"";$("laserArea").value=s.area||"";$("presets").value=s.presets||"";$("wl").value=s.wl||"";}
+  $("irr").value=s.irr||"";$("laserMw").value=s.mw||"";$("laserArea").value=s.area||"";$("presets").value=s.presets||"";$("wl").value=s.wl||"";
+  $("watts").value=s.watts!=null&&s.watts!==""?s.watts:(d.wattsE!=null?d.wattsE:"");}
 function run(){const k=$("device").value,d=DEVICES[k];let irr=+$("irr").value,src="yours";
   if(!irr&&d.type==="laser"&&+$("laserMw").value&&+$("laserArea").value){irr=+$("laserMw").value/+$("laserArea").value;src="calc";}
   if(!irr){irr=d.irr;src="est";}
@@ -139,13 +167,137 @@ function run(){const k=$("device").value,d=DEVICES[k];let irr=+$("irr").value,sr
   else h+=`<div class="big">${fmt(r.sessionMin*60)} per session</div>${r.timer?`<div>${r.timer.txt}</div>`:""}`;
   h+=`<div>Frequency: <b>${r.freq}</b></div><div class="flag">Start low, observe for 24–48 h, adjust in small steps. If the reaction is good, you may increase time ~20%; if sore or uneasy, go back down or stop.</div>`;
   r.notes.forEach(n=>h+=`<div class="muted">• ${n}</div>`);r.warns.forEach(w=>h+=`<div class="warn">⚠ ${w}</div>`);
-  $("result").innerHTML=h;}
-$("saveBtn").onclick=()=>{DB[$("device").value]={irr:$("irr").value,mw:$("laserMw").value,area:$("laserArea").value,presets:$("presets").value,wl:$("wl").value};localStorage.setItem(KEY,JSON.stringify(DB));$("saveBtn").textContent="Saved ✔";setTimeout(()=>$("saveBtn").textContent="Save my device settings",1500);};
+  $("result").innerHTML=h;
+  remember(o,r,d,src);}
+$("saveBtn").onclick=()=>{DB[$("device").value]={irr:$("irr").value,mw:$("laserMw").value,area:$("laserArea").value,presets:$("presets").value,wl:$("wl").value,watts:$("watts").value};localStorage.setItem(KEY,JSON.stringify(DB));$("saveBtn").textContent="Saved ✔";setTimeout(()=>$("saveBtn").textContent="Save my device settings",1500);};
 $("resetBtn").onclick=()=>{delete DB[$("device").value];localStorage.setItem(KEY,JSON.stringify(DB));loadDev();run();};
 function tmCorr(w){w=Math.min(w,1999);return w<=1000?w*0.0488:48.8+(w-1000)*(92-48.8)/999;}
 $("tm").oninput=()=>{const w=+$("tm").value;$("tmOut").innerHTML=w?`Raw ${(w/10).toFixed(1)} → <b>corrected ≈ ${tmCorr(w).toFixed(1)} mW/cm²</b> <button type="button" id="useTm" style="margin:6px 0 0">Use this value</button>`:"Enter a reading.";if(w)$("useTm").onclick=()=>{$("irr").value=tmCorr(w).toFixed(1);run();};};
 $("species").onchange=()=>{fillAreas();run()};$("device").onchange=()=>{loadDev();run()};
-document.querySelectorAll("select,input").forEach(e=>{if(!["species","device","tm"].includes(e.id))e.addEventListener("input",run)});
+document.querySelectorAll("select,input").forEach(e=>{if(!["species","device","tm","clientName","animalName"].includes(e.id))e.addEventListener("input",run)});
+let session=null;
+function optText(id){const el=$(id);return el.options[el.selectedIndex].text;}
+function remember(o,r,d,src){
+  const rows=[["Species",optText("species")],["Body area",o.area],["Tissue depth",o.depth],["Goal",optText("goal")],["Area of concern",optText("onset")],["Age group",optText("age")],["Coat / hair",optText("coat")],["Coat / skin color",optText("color")]];
+  if($("sizeL").style.display!=="none")rows.push(["Body size",optText("size")]);
+  rows.push(["Comfort / discomfort",o.pain+"/10"]);
+  if(o.flags)rows.push(["Flagged","Pregnant, photosensitizing meds/topicals, or a known lump/growth in or near this area"]);
+  rows.push(["Device",d.name]);
+  const watts=$("watts").value.trim();rows.push(["Device watts (from label)",watts?watts+" W (wall power, not light output)":"not entered"]);
+  const wl=$("wl").value.trim();if(wl)rows.push(["Wavelengths",wl]);
+  if(d.type==="lamp")rows.push(["Distance",optText("dist")]);
+  if(d.type==="laser"){
+    rows.push(["Laser dosing method",optText("laserMode")]);
+    if($("laserMw").value)rows.push(["Optical output",$("laserMw").value+" mW"]);
+    if($("laserArea").value)rows.push(["Spot / aperture area",$("laserArea").value+" cm²"]);
+  }
+  rows.push(["Irradiance at skin",r.irr+" mW/cm²"+(src==="est"?" (estimate)":src==="calc"?" (calculated from optical output)":"")]);
+  if(o.presets)rows.push(["Timer presets",o.presets.join(", ")+" min"]);
+  const results=[["Target dose",r.fluence+" J/cm²"]];
+  if(d.type==="laser"){
+    results.push(["Time per spot",r.perSpotSec+" s"]);
+    results.push(["Energy per spot",r.energyJ+" J"]);
+    results.push(["Layout","spots about "+r.spacing+" cm apart, about "+r.spots+" spots, about "+r.totalMin+" min total"]);
+  }else results.push(["Session time",fmt(r.sessionMin*60)]);
+  if(r.timer)results.push(["Timer",r.timer.txt]);
+  results.push(["Frequency",r.freq]);
+  session={rows,results,notes:r.notes.slice(),warns:r.warns.slice(),observe:"Start low, observe for 24–48 h, adjust in small steps. If the reaction is good, you may increase time ~20%; if sore or uneasy, go back down or stop."};
+  $("shareBtn").disabled=false;$("pdfBtn").disabled=false;
+}
+function summaryNow(){
+  if(!session)return null;
+  const when=new Date();
+  return Object.assign({when,dateLabel:when.toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}),client:$("clientName").value.trim(),animal:$("animalName").value.trim(),safety:[...document.querySelectorAll("#safetyList li")].map(li=>li.textContent.trim()),disc:document.querySelector(".disc").textContent.trim()},session);
+}
+function summaryLines(s){
+  const lines=["Southern Bee Equine","Red light session summary",s.dateLabel,""];
+  if(s.client)lines.push("Client / patient: "+s.client);
+  if(s.animal)lines.push("Animal name / species: "+s.animal);
+  if(s.client||s.animal)lines.push("");
+  lines.push("Inputs");s.rows.forEach(([k,v])=>lines.push(k+": "+v));
+  lines.push("","Suggested starting session");s.results.forEach(([k,v])=>lines.push(k+": "+v));
+  lines.push("",s.observe);
+  if(s.notes.length){lines.push("");s.notes.forEach(n=>lines.push("• "+n));}
+  if(s.warns.length){lines.push("");s.warns.forEach(w=>lines.push("• "+w));}
+  lines.push("","Safety");s.safety.forEach(t=>lines.push("• "+t));
+  lines.push("",s.disc,"","Southern Bee Equine","southernbeeequine@gmail.com","(972) 342-3022");
+  return lines;
+}
+function plainSummary(){const s=summaryNow();return s?summaryLines(s).join("\n"):"";}
+function isPhone(){return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);}
+function flash(msg){const n=$("copyNote");n.textContent=msg;n.className=msg==="Copied"?"flag":"muted";clearTimeout(flash.t);flash.t=setTimeout(()=>{if(n.textContent===msg){n.textContent="";n.className="";}},2500);}
+$("shareBtn").onclick=async()=>{
+  const text=plainSummary();if(!text)return;
+  const title="Southern Bee Equine – red light session summary";
+  if(isPhone()&&navigator.share){
+    try{await navigator.share({title,text});return;}catch(e){if(e&&e.name==="AbortError")return;}
+  }
+  try{await navigator.clipboard.writeText(text);flash("Copied");}
+  catch{const a=document.createElement("a");a.href="mailto:?subject="+encodeURIComponent(title)+"&body="+encodeURIComponent(text);a.click();flash("Email draft opened");}
+};
+const WIN={"–":0x96,"—":0x97,"•":0x95,"’":0x92,"‘":0x91,"“":0x93,"”":0x94,"…":0x85,"²":0xB2,"é":0xE9,"×":0xD7};
+function pdfHex(s){let h="";for(const ch of String(s)){let b=WIN[ch];if(b==null){const c=ch.codePointAt(0);b=(c>=32&&c<=126)||(c>=160&&c<=255)?c:63;}h+=b.toString(16).padStart(2,"0");}return "<"+h+">";}
+function charW(ch){const c=ch.codePointAt(0);if(c===32||ch==="."||ch===","||ch==="'"||ch==="i"||ch==="l"||ch==="I"||ch==="j")return 278;if(ch==="m"||ch==="w")return 833;if(ch==="M"||ch==="W")return 900;if(ch==="f"||ch==="t"||ch==="r"||ch==="-")return 333;if(c>=48&&c<=57)return 556;if(c>=65&&c<=90)return 667;return 520;}
+function wrapPdf(text,size,max){const words=String(text).split(/\s+/).filter(Boolean),width=s=>[...s].reduce((a,ch)=>a+charW(ch)*size/1000,0);const lines=[];let line="";for(const word of words){const trial=line?line+" "+word:word;if(line&&width(trial)>max){lines.push(line);line=word;}else line=trial;}if(line)lines.push(line);return lines.length?lines:[""];}
+function buildPdf(s){
+  const pages=[];let cmds=null,y=0;
+  const ink=[0.078,0.149,0.169],teal=[0.063,0.235,0.290],muted=[0.33,0.4,0.4];
+  const text=(font,size,x,yy,str,rgb)=>rgb.map(n=>n.toFixed(3)).join(" ")+" rg\nBT /"+font+" "+size+" Tf 1 0 0 1 "+x+" "+yy+" Tm "+pdfHex(str)+" Tj ET\n";
+  function closePage(){if(!cmds)return;cmds.push(text("F1",8,40,34,"Southern Bee Equine  ·  southernbeeequine@gmail.com  ·  (972) 342-3022",teal));cmds.push(text("F1",8,40,22,"Wellness guide only — not veterinary or medical advice.",muted));pages.push(cmds.join(""));cmds=null;}
+  function newPage(){closePage();cmds=[];cmds.push("0.063 0.235 0.290 rg\n0 746 612 46 re f\n0.773 0.627 0.349 rg\n0 740 612 6 re f\n");cmds.push(text("F2",16,40,764,"Southern Bee Equine",[1,1,1]));cmds.push(text("F1",9,40,750,"Red light session summary",[1,1,1]));y=722;}
+  function need(h){if(y-h<52)newPage();}
+  function para(font,size,str,rgb,gap){const lines=wrapPdf(str,size,524);need(lines.length*(size+3)+gap);for(const line of lines){cmds.push(text(font,size,40,y,line,rgb));y-=size+3;}y-=gap;}
+  function heading(label){need(22);cmds.push(text("F2",12,40,y,label,teal));cmds.push("0.773 0.627 0.349 rg\n40 "+(y-4)+" 78 2 re f\n");y-=18;}
+  newPage();
+  para("F1",10,s.dateLabel,ink,2);
+  if(s.client)para("F1",10,"Client / patient: "+s.client,ink,1);
+  if(s.animal)para("F1",10,"Animal name / species: "+s.animal,ink,1);
+  y-=6;heading("Inputs");s.rows.forEach(([k,v])=>para("F1",9,k+": "+v,ink,1));
+  y-=4;heading("Suggested starting session");s.results.forEach(([k,v])=>para(k==="Frequency"?"F2":"F1",9,k+": "+v,ink,1));
+  y-=3;para("F3",9,s.observe,ink,2);
+  s.notes.forEach(n=>para("F1",9,"• "+n,muted,1));
+  s.warns.forEach(w=>para("F1",9,"• "+w,ink,1));
+  y-=4;heading("Safety");s.safety.forEach(t=>para("F1",9,"• "+t,ink,1));
+  y-=4;para("F3",9,s.disc,ink,2);
+  closePage();
+  const objects=["<< /Type /Catalog /Pages 2 0 R >>",""];
+  const fontN=3,pageStart=6,kids=[];
+  objects[1]="<< /Type /Pages /Kids ["+pages.map((_,i)=>(pageStart+i*2)+" 0 R").join(" ")+"] /Count "+pages.length+" >>";
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>");
+  pages.forEach((stream,i)=>{
+    kids.push(pageStart+i*2);
+    objects.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents "+(pageStart+i*2+1)+" 0 R /Resources << /Font << /F1 "+fontN+" 0 R /F2 "+(fontN+1)+" 0 R /F3 "+(fontN+2)+" 0 R >> >> >>");
+    objects.push("<< /Length "+stream.length+" >>\nstream\n"+stream+"endstream");
+  });
+  objects.push("<< /Title (Southern Bee Equine red light session summary) /Author (Southern Bee Equine) >>");
+  let out="%PDF-1.4\n",offsets=[0];
+  objects.forEach((body,i)=>{offsets.push(out.length);out+=(i+1)+" 0 obj\n"+body+"\nendobj\n";});
+  const xref=out.length;
+  out+="xref\n0 "+(objects.length+1)+"\n0000000000 65535 f \n";
+  for(let i=1;i<offsets.length;i++)out+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";
+  out+="trailer\n<< /Size "+(objects.length+1)+" /Root 1 0 R /Info "+objects.length+" 0 R >>\nstartxref\n"+xref+"\n%%EOF";
+  const bytes=new Uint8Array(out.length);for(let i=0;i<out.length;i++)bytes[i]=out.charCodeAt(i);return bytes;
+}
+function fillPrint(s){
+  const esc=t=>String(t).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  const row=(k,v)=>"<p><b>"+esc(k)+":</b> "+esc(v)+"</p>";
+  $("printSheet").innerHTML="<h1>Southern Bee Equine</h1><p>Red light session summary · "+esc(s.dateLabel)+"</p>"+(s.client?row("Client / patient",s.client):"")+(s.animal?row("Animal name / species",s.animal):"")+"<h2>Inputs</h2>"+s.rows.map(([k,v])=>row(k,v)).join("")+"<h2>Suggested starting session</h2>"+s.results.map(([k,v])=>row(k,v)).join("")+"<p>"+esc(s.observe)+"</p>"+s.notes.map(n=>"<p>• "+esc(n)+"</p>").join("")+s.warns.map(w=>"<p>• "+esc(w)+"</p>").join("")+"<h2>Safety</h2>"+s.safety.map(t=>"<p>• "+esc(t)+"</p>").join("")+"<p><b>"+esc(s.disc)+"</b></p><p>Southern Bee Equine<br>southernbeeequine@gmail.com<br>(972) 342-3022</p>";
+}
+function pdfName(d){const z=n=>String(n).padStart(2,"0");return "southern-bee-equine-session-"+d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+".pdf";}
+$("pdfBtn").onclick=async()=>{
+  const s=summaryNow();if(!s)return;
+  try{
+    const bytes=buildPdf(s),name=pdfName(s.when),blob=new Blob([bytes],{type:"application/pdf"}),file=new File([blob],name,{type:"application/pdf"});
+    if(isPhone()&&navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:"Southern Bee Equine session summary"});return;}catch(e){if(e&&e.name==="AbortError")return;}
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2500);
+  }catch(err){fillPrint(s);document.body.classList.add("printing-summary");window.addEventListener("afterprint",()=>document.body.classList.remove("printing-summary"),{once:true});window.print();}
+};
 fillAreas();loadDev();run();
 if("serviceWorker"in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js");
 </script></body></html>
