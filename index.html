@@ -263,8 +263,10 @@ function pdfSafe(s){
     .trim();
 }
 function pdfHex(s){let h="";for(const ch of pdfSafe(s)){const c=ch.charCodeAt(0);h+=(c>=32&&c<=126?c:32).toString(16).padStart(2,"0");}return "<"+h+">";}
-function charW(ch){const c=ch.charCodeAt(0);if(c===32||ch==="."||ch===","||ch==="'"||ch==="i"||ch==="l"||ch==="I"||ch==="j")return 278;if(ch==="m"||ch==="w")return 833;if(ch==="M"||ch==="W")return 900;if(ch==="f"||ch==="t"||ch==="r"||ch==="-")return 333;if(c>=48&&c<=57)return 556;if(c>=65&&c<=90)return 667;return 520;}
-function wrapPdf(text,size,max){const words=pdfSafe(text).split(/\s+/).filter(Boolean),width=s=>[...s].reduce((a,ch)=>a+charW(ch)*size/1000,0);const lines=[];let line="";for(const word of words){const trial=line?line+" "+word:word;if(line&&width(trial)>max){lines.push(line);line=word;}else line=trial;}if(line)lines.push(line);return lines.length?lines:[""];}
+function charW(ch){const c=ch.charCodeAt(0);if(c===32)return 278;if("ilIj!'|.,;:".includes(ch))return 278;if(ch==="f"||ch==="t")return 278;if(ch==="r"||ch==="-"||ch==="("||ch===")")return 333;if("cszvxykJ".includes(ch))return 500;if(ch==="w")return 722;if(ch==="m"||ch==="M")return 833;if(ch==="W")return 944;if(ch==="%")return 889;if(ch==="/"||ch==="\\")return 278;if(c>=48&&c<=57)return 556;if(c>=65&&c<=90)return 667;if(c>=97&&c<=122)return 556;return 556;}
+function textW(str,size,bold){return [...pdfSafe(str)].reduce((a,ch)=>a+(ch===" "?charW(ch):charW(ch)*(bold?1.12:1))*size/1000,0);}
+function wrapPdf(text,size,max,bold){const words=pdfSafe(text).split(/\s+/).filter(Boolean),width=s=>textW(s,size,!!bold);const lines=[];let line="";for(const word of words){const trial=line?line+" "+word:word;if(line&&width(trial)>max){lines.push(line);line=word;}else line=trial;}if(line)lines.push(line);return lines.length?lines:[""];}
+function wrapStep(st,n){const words=pdfSafe(st).split(/\s+/).filter(Boolean),prefix=n+". ",firstMax=526-textW(prefix,9.5,true),restMax=510;const lines=[];let i=0,line="";while(i<words.length){const trial=line?line+" "+words[i]:words[i];if(line&&textW(trial,9.5,true)>firstMax)break;line=trial;i++;}lines.push(line||"");line="";for(;i<words.length;i++){const trial=line?line+" "+words[i]:words[i];if(line&&textW(trial,9.5,false)>restMax){lines.push(line);line=words[i];}else line=trial;}if(line)lines.push(line);return lines;}
 function pick(list,k){const f=list.find(r=>r[0]===k);return f?f[1]:"";}
 function sentence(t){t=String(t||"").trim();if(!t)return "";return /[.!]$/.test(t)?t:t+".";}
 function handout(s){
@@ -300,7 +302,7 @@ function buildPdf(s){
   let cmds=null,y=0;
   const text=(font,size,x,yy,str,rgb)=>rgb.map(n=>n.toFixed(3)).join(" ")+" rg\nBT /"+font+" "+size+" Tf 1 0 0 1 "+x.toFixed(1)+" "+yy.toFixed(1)+" Tm "+pdfHex(str)+" Tj ET\n";
   const box=(x,top,w,hh,fill,bar)=>{let o=fill.map(n=>n.toFixed(3)).join(" ")+" rg\n"+x+" "+(top-hh).toFixed(1)+" "+w+" "+hh.toFixed(1)+" re f\n";if(bar)o+=bar.map(n=>n.toFixed(3)).join(" ")+" rg\n"+x+" "+(top-hh).toFixed(1)+" 5 "+hh.toFixed(1)+" re f\n";cmds.push(o);};
-  const widthOf=(str,size)=>[...pdfSafe(str)].reduce((a,ch)=>a+charW(ch)*size/1000,0);
+  const widthOf=(str,size,bold)=>textW(str,size,!!bold);
   function footer(){
     cmds.push(text("F2",8,32,40,"Southern Bee Equine",teal));
     cmds.push(text("F1",8,138,40,"southernbeeequine@gmail.com   |   (972) 342-3022",teal));
@@ -315,22 +317,22 @@ function buildPdf(s){
   let gy=y-16;cmds.push(text("F2",8,40,gy,"YOUR SESSION AT A GLANCE",teal));gy-=16;
   cmds.push(text("F1",7.5,40,gy,"SESSION TIME",muted));cmds.push(text("F1",7.5,210,gy,"TIMER SETTING",muted));cmds.push(text("F1",7.5,400,gy,"HOW OFTEN",muted));gy-=18;
   cmds.push(text("F2",16,40,gy,h.time,teal));
-  wrapPdf(h.timerShort,9,175).slice(0,2).forEach((line,i)=>cmds.push(text("F2",9,210,gy-i*11,line,ink)));
+  wrapPdf(h.timerShort,9,168,true).slice(0,2).forEach((line,i)=>cmds.push(text("F2",9,210,gy-i*11,line,ink)));
   cmds.push(text("F2",11,400,gy,h.often,teal));gy-=22;
   freqLines.forEach(line=>{cmds.push(text("F1",9,40,gy,line,ink));gy-=12;});
   y-=glanceH+10;
   const aboutLines=Math.ceil(h.about.length/2),aboutH=28+aboutLines*14;
   need(aboutH);box(28,y,556,aboutH,tealTint,teal);
   let ay=y-16;cmds.push(text("F2",11,42,ay,"About this session",teal));ay-=16;
-  for(let i=0;i<h.about.length;i++){const col=i%2,row=Math.floor(i/2),x=col?306:42,yy=ay-row*14,label=h.about[i][0]+":";cmds.push(text("F2",9,x,yy,label,teal));cmds.push(text("F1",9,x+widthOf(label,9)*1.08+8,yy,h.about[i][1],ink));}
+  for(let i=0;i<h.about.length;i++){const col=i%2,row=Math.floor(i/2),x=col?306:42,yy=ay-row*14,label=h.about[i][0]+":";cmds.push(text("F2",9,x,yy,label,teal));cmds.push(text("F1",9,x+widthOf(label,9,true)+8,yy,h.about[i][1],ink));}
   y-=aboutH+10;
-  const stepLines=h.steps.map(st=>wrapPdf(st,9.5,500));
+  const stepLines=h.steps.map((st,i)=>wrapStep(st,i+1));
   const howH=40+stepLines.reduce((a,ls)=>a+ls.length*12+4,0);
   need(howH);box(28,y,556,howH,[1,1,1],gold);cmds.push("0.910 0.941 0.945 rg\n33 "+(y-howH).toFixed(1)+" 546 "+howH.toFixed(1)+" re f\n0.773 0.627 0.349 rg\n28 "+(y-howH).toFixed(1)+" 6 "+howH.toFixed(1)+" re f\n");
   let hy=y-16;cmds.push(text("F2",11,42,hy,"How to do it",teal));hy-=16;
   stepLines.forEach((ls,i)=>{ls.forEach((line,li)=>{cmds.push(text(li?"F1":"F2",9.5,li?58:42,hy,(li?line:(i+1)+". "+line),ink));hy-=12;});hy-=4;});
   y-=howH+10;
-  const watchLines=h.watch.map(w=>wrapPdf(w,9,500));
+  const watchLines=h.watch.map(w=>wrapPdf(w,9,526-textW("- ",9,false)));
   const watchH=36+watchLines.reduce((a,ls)=>a+ls.length*12+3,0);
   need(watchH);box(28,y,556,watchH,warnTint,warnBar);
   let wy=y-16;cmds.push(text("F2",11,42,wy,"Watch for",warnBar));wy-=15;
